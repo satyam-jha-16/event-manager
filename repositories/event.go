@@ -2,38 +2,34 @@ package repositories
 
 import (
 	"context"
-	"time"
 
 	"github.com/satyam-jha-16/event-manager/models"
+	"gorm.io/gorm"
 )
 
 type EventRepository struct {
-	db any
+	db *gorm.DB
 }
 
-
-func (r *EventRepository) GetMany(ctx context.Context) ([]*models.Event, error){
+func (r *EventRepository) GetMany(ctx context.Context) ([]*models.Event, error) {
 	events := []*models.Event{}
-	events = append(events, &models.Event{
-		ID: "asf123",
-		Name: "star wars",
-		Location: "galaxy far far away",
-		Date: time.Now(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	})
-	
+	res := r.db.Model(&models.Event{}).Order("updated_at desc").Find(&events)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
 	return events, nil
 }
 
-func (r *EventRepository) GetOne(ctx context.Context, id string) (*models.Event, error){
-	return nil , nil
+func (r *EventRepository) GetOne(ctx context.Context, id string) (*models.Event, error) {
+	return nil, nil
 }
 
-func (r *EventRepository) Create(ctx context.Context, event *models.Event) (*models.Event, error){
-	return nil , nil
+func (r *EventRepository) Create(ctx context.Context, event *models.Event) (*models.Event, error) {
+	return nil, nil
 }
 
-func NewEventRepository(db any) models.EventRepository{
-	return &EventRepository{db : db}
+func NewEventRepository(db *gorm.DB) models.EventRepository {
+	return &EventRepository{db: db}
 }
