@@ -12,57 +12,55 @@ type TicketRepository struct {
 	db *gorm.DB
 }
 
-func (r *TicketRepository) GetMany(ctx context.Context) ([]*models.Ticket, error) {
+func (r *TicketRepository) GetMany(ctx context.Context, userId uint) ([]*models.Ticket, error) {
     tickets := []*models.Ticket{}
-    
-    res := r.db.Preload("Event").Order("updated_at desc").Find(&tickets)
-    
+
+    res := r.db.Model(&models.Ticket{}).Where("user_id = ?", userId).Preload("Event").Order("updated_at desc").Find(&tickets)
+
     if res.Error != nil {
         return nil, res.Error
     }
-    
-    return tickets, nil 
+
+    return tickets, nil
 }
 
-func (r *TicketRepository) GetOne(ctx context.Context, id uint) (*models.Ticket, error) {
+
+
+
+func (r *TicketRepository) GetOne(ctx context.Context, userId uint, id uint) (*models.Ticket, error) {
     ticket := &models.Ticket{}
-    
-    res := r.db.Preload("Event").Where("id = ?", id).First(ticket)
-    
+
+    res := r.db.Model(&models.Ticket{}).Where("id = ?", id).Where("user_id = ?", userId).Preload("Event").First(ticket)
+
     if res.Error != nil {
         return nil, res.Error
     }
     return ticket, nil
 }
 
-func (r *TicketRepository) Create(ctx context.Context, ticket *models.Ticket) (*models.Ticket, error) {
-    // Verify the associated Event exists
+func (r *TicketRepository) Create(ctx context.Context, userId uint, ticket *models.Ticket) (*models.Ticket, error) {
+	ticket.UserID = userId
     if err := r.db.First(&models.Event{}, ticket.EventID).Error; err != nil {
         return nil, fmt.Errorf("invalid event ID: %v", err)
     }
-    
-    // Create the Ticket
-    res := r.db.Create(ticket)
+
+    res := r.db.Model(&models.Ticket{}).Create(ticket)
     if res.Error != nil {
         return nil, res.Error
     }
-    
-    // Reload the ticket with the associated event
-    if err := r.db.Preload("Event").First(ticket, ticket.ID).Error; err != nil {
-        return nil, err
-    }
-    
-    return ticket, nil
+
+    return r.GetOne(ctx, userId, ticket.ID)
+
 }
 
 
-func (r *TicketRepository) DeleteOne(ctx context.Context, id uint) error {
+func (r *TicketRepository) DeleteOne(ctx context.Context, userId uint, id uint) error {
 
 	res := r.db.Delete(&models.Ticket{}, id)
 	return res.Error
 }
 
-func (r *TicketRepository) UpdateOne(ctx context.Context, id uint, updateData map[string]interface{}) (*models.Ticket, error) {
+func (r *TicketRepository) UpdateOne(ctx context.Context,userId uint, id uint, updateData map[string]interface{}) (*models.Ticket, error) {
 	ticket := &models.Ticket{}
 	upres := r.db.Model(ticket).Where("id = ?", id).Updates(updateData)
 
