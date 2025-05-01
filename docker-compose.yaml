@@ -1,7 +1,7 @@
 services:
   app:
     tty: true #keep the container running
-    restart: always
+    restart: no
     image: event-link
     container_name: event-link
     build: .
